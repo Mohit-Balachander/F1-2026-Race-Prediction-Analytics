@@ -159,25 +159,22 @@ def predict_race(
 ) -> pd.DataFrame:
     """
     Predict finishing order for one upcoming race.
-
-    Parameters
-    ----------
-    model_obj           : dict from train_model()
-    driver_features     : DataFrame with one row per driver, rolling stats filled
-    qualifying_positions: {driver_code: grid_pos} -- if available, overrides AvgGrid
-
-    Returns
-    -------
-    DataFrame with drivers ranked by predicted finish, including confidence bands.
+    Only returns predictions for drivers on the 2026 grid.
+    Old drivers from training data (ZHO, RIC, MAG etc) are filtered out.
     """
     df = prepare_features(driver_features.copy())
+
+    # CRITICAL: filter to 2026 grid only -- removes old drivers from training data
+    df = df[df["Driver"].isin(DRIVERS_2026.keys())].copy()
+
+    if df.empty:
+        return pd.DataFrame()
 
     # If qualifying positions provided, use them as GridPosition
     if qualifying_positions:
         df["GridPosition"] = df["Driver"].map(qualifying_positions).fillna(df["GridPosition"])
 
     available = model_obj["features"]
-    # Fill any missing feature columns with median from training
     for col in available:
         if col not in df.columns:
             df[col] = 10.0
@@ -188,28 +185,23 @@ def predict_race(
     gb = model_obj["gb"]
     rf = model_obj["rf"]
 
-    # Ensemble prediction: 60% GB + 40% RF
     pred_gb = gb.predict(X)
     pred_rf = rf.predict(X)
     pred    = 0.6 * pred_gb + 0.4 * pred_rf
 
     df["PredictedPos_Raw"] = pred
 
-    # Clip and re-rank to 1-22
+    # Re-rank to exactly 1-22
     df = df.sort_values("PredictedPos_Raw").reset_index(drop=True)
     df["PredictedPos"] = range(1, len(df) + 1)
 
-    # Confidence: how much the two models disagree
     df["ModelDisagreement"] = abs(pred_gb - pred_rf)
     df["Confidence"] = df["ModelDisagreement"].apply(
         lambda x: "High" if x < 1.5 else ("Medium" if x < 3.0 else "Low")
     )
 
-    # Add driver name and team
     df["Name"] = df["Driver"].map(lambda d: DRIVERS_2026.get(d, (d, "", ""))[0])
     df["Team"] = df["Driver"].map(lambda d: DRIVERS_2026.get(d, (d, "Unknown", ""))[1])
-
-    # Points earned at predicted position
     df["PredictedPoints"] = df["PredictedPos"].map(lambda p: POINTS.get(p, 0))
 
     cols = ["PredictedPos", "Driver", "Name", "Team",

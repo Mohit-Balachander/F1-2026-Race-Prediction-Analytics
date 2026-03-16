@@ -46,7 +46,8 @@ page = st.sidebar.radio("Navigate", [
     "Current Standings",
     "Next Race Predictor",
     "Championship Forecast",
-    "Race Replay + Prediction",
+    "Telemetry Analysis",
+    "Race Replay",
     "Model Insights",
     "Add Race Result",
 ])
@@ -463,8 +464,11 @@ elif page == "Championship Forecast":
 # ===========================================================================
 # PAGE 4: MODEL INSIGHTS
 # ===========================================================================
-elif page == "Race Replay + Prediction":
-    exec(open("pages/page_replay.py", encoding="utf-8").read())
+elif page == "Telemetry Analysis":
+    exec(open("pages/page_telemetry.py", encoding="utf-8").read())
+
+elif page == "Race Replay":
+    exec(open("pages/page_race_replay.py", encoding="utf-8").read())
 
 elif page == "Model Insights":
     st.title("Model Insights")

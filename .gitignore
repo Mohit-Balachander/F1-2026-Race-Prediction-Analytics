@@ -1,4 +1,6 @@
 data/cache/
+data/computed/
+results/
 __pycache__/
 *.pyc
 .venv/
