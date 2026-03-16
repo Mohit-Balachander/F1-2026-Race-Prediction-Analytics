@@ -1,2 +1,4 @@
-data/cache/fastf1_http_cache.sqlite
-replay_engine/
+data/cache/
+__pycache__/
+*.pyc
+.venv/
